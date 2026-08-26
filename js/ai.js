@@ -45,6 +45,7 @@ const TankAI = (() => {
   }
 
   function aimDirection(tank, target) {
+    if (!target) return tank.direction;
     const a = tankCenter(tank);
     const b = tankCenter(target);
     const dx = b.x - a.x;
@@ -79,6 +80,7 @@ const TankAI = (() => {
 
   function scoreDirection(tank, dir, target, behavior, distance) {
     let score = Math.random() * 0.35;
+    if (!target) return score;
     const dot = dir.x * (target.center().x - tank.center().x) + dir.y * (target.center().y - tank.center().y);
     if (behavior === "aggressive" || behavior === "classic") {
       score += dot > 0 ? 0.7 : -0.25;

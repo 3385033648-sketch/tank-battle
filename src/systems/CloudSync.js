@@ -302,6 +302,36 @@ const CloudSync = (() => {
     URL.revokeObjectURL(url);
   }
 
+  function importSave(file) {
+    return new Promise((resolve, reject) => {
+      if (!file) {
+        reject(new Error("未选择文件"));
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const parsed = JSON.parse(String(event.target.result || ""));
+          if (!parsed || typeof parsed !== "object" || !parsed.legacy) {
+            throw new Error("文件格式不正确，不是有效的存档文件");
+          }
+          if (parsed.version !== undefined && Number(parsed.version) > SAVE_VERSION) {
+            throw new Error("存档版本过高，请先升级游戏后再导入");
+          }
+          const merged = mergeSave(buildSave(), parsed);
+          applySave(merged);
+          setState("success");
+          resolve({ ok: true, merged });
+        } catch (err) {
+          setState("error");
+          reject(err);
+        }
+      };
+      reader.onerror = () => reject(new Error("文件读取失败"));
+      reader.readAsText(file);
+    });
+  }
+
   function wrapEconomyMutators() {
     const mutators = [
       "addCoins",
@@ -376,6 +406,7 @@ const CloudSync = (() => {
     sync,
     scheduleSync,
     exportSave,
+    importSave,
     onSyncChange,
     getLastSyncTime,
     getSyncState,

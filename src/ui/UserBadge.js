@@ -16,6 +16,61 @@ const UserBadge = (() => {
     return "上次同步 " + date.toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" });
   }
 
+  function createFileInput() {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".json,application/json";
+    input.style.display = "none";
+    document.body.appendChild(input);
+    return input;
+  }
+
+  function importFromFile(input) {
+    const file = input.files && input.files[0];
+    input.value = "";
+    if (!file) return;
+    CloudSync.importSave(file).then((result) => {
+      alert("导入成功！金币、皮肤、进度已合并到当前存档。");
+      render();
+      if (window.MetaUI && MetaUI.refresh) MetaUI.refresh();
+    }).catch((err) => {
+      alert("导入失败：" + (err && err.message ? err.message : "文件无法识别"));
+    });
+  }
+
+  function appendSaveButtons(menu) {
+    const exportBtn = document.createElement("button");
+    exportBtn.type = "button";
+    exportBtn.className = "user-menu-item";
+    exportBtn.textContent = "导出存档";
+    exportBtn.addEventListener("click", () => {
+      menu.classList.add("hidden");
+      CloudSync.exportSave();
+    });
+    menu.appendChild(exportBtn);
+
+    const importBtn = document.createElement("button");
+    importBtn.type = "button";
+    importBtn.className = "user-menu-item";
+    importBtn.textContent = "导入存档";
+    importBtn.addEventListener("click", () => {
+      menu.classList.add("hidden");
+      const input = createFileInput();
+      input.addEventListener("change", () => {
+        importFromFile(input);
+        input.remove();
+      });
+      input.click();
+    });
+    menu.appendChild(importBtn);
+  }
+
+  function buildMenu() {
+    const menu = document.createElement("div");
+    menu.className = "user-menu hidden";
+    return menu;
+  }
+
   function render() {
     const container = el("userBadge");
     if (!container) return;
@@ -23,12 +78,30 @@ const UserBadge = (() => {
     currentUser = SupabaseAuth.getDisplayUser();
 
     if (currentUser.isGuest) {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = "user-login-btn";
-      button.textContent = "登录";
-      button.addEventListener("click", () => AuthPanel.open());
-      container.appendChild(button);
+      const badge = document.createElement("div");
+      badge.className = "user-badge-main guest-badge";
+
+      const icon = document.createElement("span");
+      icon.className = "user-avatar";
+      icon.textContent = "存";
+
+      const label = document.createElement("span");
+      label.className = "user-label";
+      label.textContent = "存档";
+
+      badge.appendChild(icon);
+      badge.appendChild(label);
+
+      const menu = buildMenu();
+      appendSaveButtons(menu);
+
+      badge.addEventListener("click", (event) => {
+        event.stopPropagation();
+        menu.classList.toggle("hidden");
+      });
+
+      container.appendChild(badge);
+      container.appendChild(menu);
       return;
     }
 
@@ -63,8 +136,7 @@ const UserBadge = (() => {
     badge.appendChild(label);
     badge.appendChild(sync);
 
-    const menu = document.createElement("div");
-    menu.className = "user-menu hidden";
+    const menu = buildMenu();
 
     const account = document.createElement("div");
     account.className = "user-menu-item user-menu-account";
@@ -87,15 +159,7 @@ const UserBadge = (() => {
     });
     menu.appendChild(syncBtn);
 
-    const exportBtn = document.createElement("button");
-    exportBtn.type = "button";
-    exportBtn.className = "user-menu-item";
-    exportBtn.textContent = "导出存档";
-    exportBtn.addEventListener("click", () => {
-      menu.classList.add("hidden");
-      CloudSync.exportSave();
-    });
-    menu.appendChild(exportBtn);
+    appendSaveButtons(menu);
 
     const logoutBtn = document.createElement("button");
     logoutBtn.type = "button";

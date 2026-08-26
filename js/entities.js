@@ -167,12 +167,13 @@ class Tank {
     if (!this.alive) return;
     const blink = this.spawnTimer > 0 && Math.floor(time * 14) % 2 === 0;
     const ghost = this.ghostTimer > 0;
+    const lowPerf = window.__tankLowPerf === true;
     ctx.save();
     ctx.globalAlpha = blink ? 0.45 : ghost ? 0.22 : 1;
     ctx.translate(this.x + this.w / 2, this.y + this.h / 2);
     ctx.rotate(this.facingAngle);
 
-    if (this.skinConfig && this.skinConfig.visuals && this.skinConfig.visuals.aura) {
+    if (!lowPerf && this.skinConfig && this.skinConfig.visuals && this.skinConfig.visuals.aura) {
       ctx.shadowColor = this.skinConfig.visuals.auraColor || this.accent;
       ctx.shadowBlur = 18 + Math.sin(time * 7) * 6;
     }
@@ -210,7 +211,7 @@ class Tank {
     ctx.arc(0, 0, 4.5, 0, Math.PI * 2);
     ctx.fill();
 
-    if (this.skinConfig && this.skinConfig.visuals && this.skinConfig.visuals.shimmer) {
+    if (!lowPerf && this.skinConfig && this.skinConfig.visuals && this.skinConfig.visuals.shimmer) {
       ctx.save();
       ctx.globalAlpha = 0.5 + Math.sin(time * 9) * 0.3;
       ctx.strokeStyle = this.accent;

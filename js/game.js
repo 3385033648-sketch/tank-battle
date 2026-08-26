@@ -30,6 +30,9 @@ class Game {
     this.particles = ParticleSystem;
     this.hudTimer = 0;
     this.tankPruneTimer = 1;
+    this.renderScale = 1;
+    this.lastScaleChange = 0;
+    this.frameCosts = [];
 
     this.bindUI();
     MetaUI.bind(this);
@@ -51,11 +54,43 @@ class Game {
     const tick = (now) => {
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
+      const frameStart = performance.now();
       this.update(dt);
       this.draw(now / 1000);
+      this.trackFrame(performance.now() - frameStart);
       requestAnimationFrame(tick);
     };
     requestAnimationFrame(tick);
+  }
+
+  applyRenderScale() {
+    this.renderScale = Math.max(0.55, Math.min(1, this.renderScale));
+    this.canvas.width = Math.max(1, Math.round(GameConfig.LOGICAL_WIDTH * this.renderScale));
+    this.canvas.height = Math.max(1, Math.round(GameConfig.LOGICAL_HEIGHT * this.renderScale));
+    window.__tankLowPerf = this.renderScale < 0.85;
+    if (this.settings.particles) {
+      ParticleSystem.setQuality(this.renderScale >= 0.85);
+    }
+  }
+
+  trackFrame(cost) {
+    this.frameCosts.push(cost);
+    if (this.frameCosts.length > 90) this.frameCosts.shift();
+    if (this.state !== "playing" || this.time < 2.5) return;
+    const avg = this.frameCosts.reduce((sum, value) => sum + value, 0) / this.frameCosts.length;
+    if (avg > 22 && this.renderScale > 0.55) {
+      this.renderScale = Math.max(0.55, this.renderScale - 0.15);
+      this.applyRenderScale();
+      this.lastScaleChange = this.time;
+    } else if (
+      avg < 13 &&
+      this.renderScale < 1 &&
+      this.time - this.lastScaleChange > 8
+    ) {
+      this.renderScale = Math.min(1, this.renderScale + 0.15);
+      this.applyRenderScale();
+      this.lastScaleChange = this.time;
+    }
   }
 
   bindUI() {
@@ -717,6 +752,7 @@ class Game {
 
   draw(time) {
     const ctx = this.ctx;
+    ctx.setTransform(this.renderScale, 0, 0, this.renderScale, 0, 0);
     ctx.clearRect(0, 0, GameConfig.LOGICAL_WIDTH, GameConfig.LOGICAL_HEIGHT);
     if (this.settings.shake && this.shake > 0) {
       ctx.save();
@@ -746,5 +782,6 @@ class Game {
     if (this.settings.shake && this.shake > 0) {
       ctx.restore();
     }
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
   }
 }

@@ -1,0 +1,5 @@
+# 忽略压缩包和系统文件
+*.zip
+.DS_Store
+Thumbs.db
+node_modules/

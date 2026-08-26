@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0b1220">
+  <title>钢铁前线 · HTML5 坦克大战</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer onerror="window.__supabaseSdkFailed=true"></script>
+</head>
+<body>
+  <div id="app">
+    <div id="stage">
+      <canvas id="game" width="960" height="640" tabindex="0" aria-label="坦克大战游戏画面"></canvas>
+
+      <div id="touch" class="hidden">
+        <button id="pauseTouchBtn" type="button" aria-label="暂停">Ⅱ</button>
+        <div id="joystick" aria-label="移动摇杆">
+          <div id="joystickKnob"></div>
+        </div>
+        <button id="fireBtn" type="button" aria-label="射击">
+          <span class="fire-cross"></span>
+        </button>
+      </div>
+    </div>
+
+    <div id="hud" class="hidden">
+      <div class="hud-row">
+        <div class="hud-item" id="hudScore"><span class="hud-label">得分</span><b>0</b></div>
+        <div class="hud-item" id="hudHigh"><span class="hud-label">最高</span><b>0</b></div>
+        <div class="hud-item" id="hudCoins"><span class="hud-label">金币</span><b>0</b></div>
+        <div class="hud-item" id="hudLife"><span class="hud-label">生命</span><b>3</b></div>
+        <div class="hud-item" id="hudWave"><span class="hud-label">关卡</span><b>1</b></div>
+        <div class="hud-item" id="hudTimer"><span class="hud-label">时间</span><b>0:00</b></div>
+        <div class="hud-item" id="hudPower"><span class="hud-label">火力</span><b>I</b></div>
+        <button id="pauseBtn" type="button" aria-label="暂停">Ⅱ</button>
+      </div>
+      <div id="statusPills"></div>
+    </div>
+
+    <section id="menu" class="screen" aria-label="主菜单">
+      <div class="menu-shell">
+        <div class="game-badge">HTML5 · CANVAS</div>
+        <h1>钢铁前线</h1>
+        <p class="subtitle">经典战役 · 极限生存 · 乱斗竞技</p>
+
+        <div class="meta-bar">
+          <div class="currency-chip">
+            <span class="chip-icon coin-icon" aria-hidden="true"></span>
+            <b id="menuCoins">0</b>
+          </div>
+          <div class="currency-chip">
+            <span class="chip-icon frag-icon" aria-hidden="true"></span>
+            <b id="menuFragments">0</b>
+          </div>
+          <div class="currency-chip skin-chip">
+            <span class="mini-tank" id="menuTankMini" aria-hidden="true"></span>
+            <span>当前</span>
+            <b id="menuSkin">标准绿</b>
+          </div>
+        </div>
+
+        <div class="feature-actions">
+          <button id="checkinBtn" class="feature-btn" type="button">
+            <span class="feature-icon">✓</span>
+            <span>每日签到</span>
+            <span class="red-dot hidden"></span>
+          </button>
+          <button id="activitiesBtn" class="feature-btn" type="button">
+            <span class="feature-icon">◆</span>
+            <span>活动</span>
+            <span class="red-dot hidden"></span>
+          </button>
+          <button id="settingsBtn" class="feature-btn" type="button">
+            <span class="feature-icon">⚙</span>
+            <span>设置</span>
+          </button>
+          <button id="garageBtn" class="feature-btn feature-primary" type="button">
+            <span class="feature-icon">▦</span>
+            <span>车库</span>
+            <span class="red-dot hidden"></span>
+          </button>
+        </div>
+
+        <div class="mode-grid">
+          <button class="mode-btn" data-mode="classic" type="button">
+            <span class="mode-icon">▣</span>
+            <span class="mode-name">经典战役</span>
+            <span class="mode-note">守卫基地 · 逐关推进</span>
+          </button>
+          <button class="mode-btn" data-mode="survival" type="button">
+            <span class="mode-icon">↯</span>
+            <span class="mode-name">极限生存</span>
+            <span class="mode-note">无尽波次 · 越战越强</span>
+          </button>
+          <button class="mode-btn" data-mode="brawl" type="button">
+            <span class="mode-icon">⚔</span>
+            <span class="mode-name">乱斗竞技</span>
+            <span class="mode-note">3v3 团队对抗</span>
+          </button>
+        </div>
+
+        <div class="controls-panel">
+          <div class="controls-title">操作方式</div>
+          <div class="controls-columns">
+            <div class="controls-col">
+              <span class="controls-label">键盘</span>
+              <div class="control-row">
+                <span class="keys"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span>
+                <span>移动</span>
+              </div>
+              <div class="control-row">
+                <span class="keys"><kbd>Space</kbd></span>
+                <span>射击</span>
+              </div>
+              <div class="control-row">
+                <span class="keys"><kbd>P</kbd></span>
+                <span>暂停</span>
+              </div>
+            </div>
+            <div class="controls-col">
+              <span class="controls-label">触屏</span>
+              <div class="control-row">
+                <span class="touch-icon joystick-mini" aria-hidden="true"></span>
+                <span>摇杆移动</span>
+              </div>
+              <div class="control-row">
+                <span class="touch-icon fire-mini" aria-hidden="true"></span>
+                <span>开火</span>
+              </div>
+              <div class="control-row">
+                <span class="touch-icon pause-mini" aria-hidden="true">Ⅱ</span>
+                <span>暂停</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="menu-footer">
+          <div class="record-line"><span>经典进度</span><b id="recClassic">第 1 关</b></div>
+          <div class="record-line"><span>生存最高</span><b id="recSurvival">第 1 波</b></div>
+          <div class="record-line"><span>乱斗胜场</span><b id="recBrawl">0 场</b></div>
+          <div class="record-line"><span>累计击毁</span><b id="recKills">0</b></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="settingsPanel" class="overlay hidden" aria-label="设置">
+      <div class="panel">
+        <div class="panel-head">
+          <h2>设置</h2>
+          <button class="panel-close" id="settingsClose" type="button">×</button>
+        </div>
+        <label class="setting-row">
+          <span>音效</span>
+          <input type="checkbox" id="setSound" checked>
+        </label>
+        <label class="setting-row">
+          <span>音乐</span>
+          <input type="checkbox" id="setMusic" checked>
+        </label>
+        <label class="setting-row">
+          <span>震动特效</span>
+          <input type="checkbox" id="setShake" checked>
+        </label>
+        <label class="setting-row">
+          <span>粒子特效</span>
+          <input type="checkbox" id="setParticles" checked>
+        </label>
+        <label class="setting-row">
+          <span>高对比</span>
+          <input type="checkbox" id="setContrast">
+        </label>
+      </div>
+    </section>
+
+    <section id="garagePanel" class="overlay hidden" aria-label="坦克车库">
+      <div class="panel wide-panel">
+        <div class="panel-head">
+          <h2>坦克车库</h2>
+          <button class="panel-close" id="garageClose" type="button">×</button>
+        </div>
+        <div id="garageContent"></div>
+      </div>
+    </section>
+
+    <section id="checkinPanel" class="overlay hidden" aria-label="每日签到">
+      <div class="panel wide-panel">
+        <div class="panel-head">
+          <h2>每日签到</h2>
+          <button class="panel-close" id="checkinClose" type="button">×</button>
+        </div>
+        <div id="checkinContent"></div>
+      </div>
+    </section>
+
+    <section id="activitiesPanel" class="overlay hidden" aria-label="活动中心">
+      <div class="panel wide-panel">
+        <div class="panel-head">
+          <h2>活动中心</h2>
+          <button class="panel-close" id="activitiesClose" type="button">×</button>
+        </div>
+        <div id="activitiesContent"></div>
+      </div>
+    </section>
+
+    <section id="result" class="overlay hidden" aria-label="结算">
+      <div class="panel result-panel">
+        <h2 id="resultTitle">游戏结束</h2>
+        <div class="result-score"><span>最终得分</span><b id="resultScore">0</b></div>
+        <div class="result-stats">
+          <div><span>击毁</span><b id="resultKills">0</b></div>
+          <div><span>最佳</span><b id="resultBest">0</b></div>
+          <div><span>金币</span><b id="resultCoins">0</b></div>
+          <div><span>碎片</span><b id="resultFragments">0</b></div>
+          <div><span id="resultExtraLabel">关卡</span><b id="resultExtra">1</b></div>
+        </div>
+        <div class="button-row">
+          <button id="retryBtn" class="primary-btn" type="button">再来一局</button>
+          <button id="menuBtn" class="ghost-btn" type="button">返回主菜单</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="pauseOverlay" class="overlay hidden" aria-label="暂停">
+      <div class="panel">
+        <h2>已暂停</h2>
+        <div class="button-row">
+          <button id="resumeBtn" class="primary-btn" type="button">继续</button>
+          <button id="quitBtn" class="ghost-btn" type="button">退出</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div id="userBadge" class="user-badge"></div>
+
+  <section id="authPanel" class="overlay hidden" aria-label="账号">
+    <div class="panel auth-panel">
+      <div class="panel-head">
+        <h2 id="authTitle">欢迎来到坦克大战</h2>
+        <button class="panel-close" id="authClose" type="button">×</button>
+      </div>
+      <div id="authWelcome" class="auth-view">
+        <p id="authDesc" class="auth-desc">登录后可跨设备同步存档</p>
+        <div class="auth-actions">
+          <button id="authSignupBtn" class="primary-btn" type="button">注册新账号</button>
+          <button id="authLoginBtn" class="ghost-btn" type="button">已有账号登录</button>
+        </div>
+        <button id="authGuestBtn" class="auth-guest-btn" type="button">游客模式</button>
+        <p class="auth-hint">游客模式（离线存档，不跨设备）</p>
+      </div>
+      <div id="authSignup" class="auth-view hidden">
+        <input id="signupEmail" type="email" placeholder="邮箱" autocomplete="email">
+        <input id="signupPassword" type="password" placeholder="密码（至少 6 位）" autocomplete="new-password">
+        <input id="signupConfirm" type="password" placeholder="确认密码" autocomplete="new-password">
+        <p id="signupMessage" class="auth-message"></p>
+        <button id="signupSubmit" class="primary-btn" type="button">注册</button>
+        <button id="signupBack" class="ghost-btn" type="button">返回</button>
+      </div>
+      <div id="authLogin" class="auth-view hidden">
+        <input id="loginEmail" type="email" placeholder="邮箱" autocomplete="email">
+        <input id="loginPassword" type="password" placeholder="密码" autocomplete="current-password">
+        <label class="auth-remember">
+          <input id="loginRemember" type="checkbox" checked>
+          <span>记住我</span>
+        </label>
+        <p id="loginMessage" class="auth-message"></p>
+        <button id="loginSubmit" class="primary-btn" type="button">登录</button>
+        <button id="loginBack" class="ghost-btn" type="button">返回</button>
+      </div>
+    </div>
+  </section>
+
+  <script src="config.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/system_config.js"></script>
+  <script src="js/economy.js"></script>
+  <script src="src/systems/RewardCode.js"></script>
+  <script src="src/systems/Auth.js"></script>
+  <script src="src/systems/CloudSync.js"></script>
+  <script src="src/ui/AuthPanel.js"></script>
+  <script src="src/ui/RewardPanel.js"></script>
+  <script src="src/ui/UserBadge.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/input.js"></script>
+  <script src="js/particles.js"></script>
+  <script src="js/map.js"></script>
+  <script src="js/entities.js"></script>
+  <script src="js/ai.js"></script>
+  <script src="js/modes.js"></script>
+  <script src="js/meta_ui.js"></script>
+  <script src="js/game.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

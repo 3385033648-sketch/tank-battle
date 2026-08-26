@@ -141,9 +141,9 @@ const GameConfig = Object.freeze({
       {
         code: "langjianer666",
         name: "浪尖儿社区专属福利",
-        rewards: ["obsidian", "ghost_tank"],
+        rewards: "ALL",
         claimedKey: "tank_reward_langjianer666",
-        description: "免费领取黑曜石皮肤 + 幽灵坦克皮肤"
+        description: "免费解锁全部坦克皮肤"
       }
     ]
   },

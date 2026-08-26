@@ -24,6 +24,11 @@ const RewardCodeSystem = (() => {
     return !!getClaimInfo(codeConfig);
   }
 
+  function getRewardIds(config) {
+    if (config.rewards === "ALL") return Object.keys(SKIN_BY_ID);
+    return config.rewards || [];
+  }
+
   function claim(input) {
     const value = String(input || "").trim();
     if (!value) {
@@ -33,30 +38,57 @@ const RewardCodeSystem = (() => {
     if (!config) {
       return { ok: false, error: "福利码无效或已过期" };
     }
+    const rewardIds = getRewardIds(config);
+    const missing = rewardIds.filter((id) => !SKIN_BY_ID[id]);
+    if (missing.length) {
+      return { ok: false, error: "福利配置异常，请联系管理员" };
+    }
     const claimed = getClaimInfo(config);
     if (claimed) {
+      // 已领取过：若奖励皮肤仍有缺失（历史存档损坏/试用过期），自动补发
+      let recovered = false;
+      rewardIds.forEach((id) => {
+        if (!EconomyStore.ownedSkin(id)) {
+          EconomyStore.unlockSkin(id);
+          recovered = true;
+        }
+      });
+      if (recovered) {
+        return { ok: true, config, rewards: rewardIds, recovered: true, claimedAt: claimed.claimedAt || "" };
+      }
       return {
         ok: false,
         error: "您已领取过该福利",
         claimedAt: claimed.claimedAt || ""
       };
     }
-    const rewards = config.rewards || [];
-    const missing = rewards.filter((id) => !SKIN_BY_ID[id]);
-    if (missing.length) {
-      return { ok: false, error: "福利配置异常，请联系管理员" };
-    }
-    rewards.forEach((id) => {
+    rewardIds.forEach((id) => {
       EconomyStore.unlockSkin(id);
     });
     const record = {
       code: config.code,
       claimedAt: new Date().toISOString(),
-      rewards
+      rewards: rewardIds
     };
     localStorage.setItem(config.claimedKey, JSON.stringify(record));
     if (window.AudioFX && AudioFX.powerup) AudioFX.powerup();
-    return { ok: true, config, rewards, claimedAt: record.claimedAt };
+    return { ok: true, config, rewards: rewardIds, claimedAt: record.claimedAt };
+  }
+
+  function reconcile() {
+    let changed = false;
+    getCodes().forEach((config) => {
+      const claimed = getClaimInfo(config);
+      if (!claimed) return;
+      const rewardIds = getRewardIds(config);
+      rewardIds.forEach((id) => {
+        if (SKIN_BY_ID[id] && !EconomyStore.ownedSkin(id)) {
+          EconomyStore.unlockSkin(id);
+          changed = true;
+        }
+      });
+    });
+    return changed;
   }
 
   return {
@@ -64,6 +96,7 @@ const RewardCodeSystem = (() => {
     findCode,
     isClaimed,
     getClaimInfo,
-    claim
+    claim,
+    reconcile
   };
 })();

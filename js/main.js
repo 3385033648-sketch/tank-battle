@@ -1,4 +1,5 @@
 (function () {
+  RewardCodeSystem.reconcile();
   RewardPanel.init();
   UserBadge.init();
   CloudSync.init();

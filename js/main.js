@@ -1,11 +1,9 @@
 (function () {
-  AuthPanel.init();
   RewardPanel.init();
   UserBadge.init();
   CloudSync.init();
   SupabaseAuth.init().then(() => {
     UserBadge.render();
-    AuthPanel.showWelcomeIfNeeded();
   });
 
   const canvas = document.getElementById("game");
